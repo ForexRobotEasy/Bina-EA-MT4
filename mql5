@@ -1,0 +1,76 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                     Bina EA MT4 |
+//|                                   Developed by Forex Robot Easy Team |
+//|                                           Developer's site: forexroboteasy.com |
+//+------------------------------------------------------------------+
+
+// Input parameters
+input int candles_period = 5; // Number of candles used for trend prediction
+input int signal_period = 10; // Number of candles used for signal generation
+input double lot_volume = 0.01; // Lot volume for trading
+input double take_profit = 100.0; // Take profit level
+input double loss_limit = 50.0; // Loss limit level
+input string trade_comment = 'Bina EA MT4'; // Trade comment
+input int expert_magic_number = 12345678; // Expert Magic Number
+
+//+------------------------------------------------------------------+
+//| Custom indicator functions                                      |
+//+------------------------------------------------------------------+
+
+// Function to analyze bullish and bearish candles
+int analyzeCandles(int period)
+{
+    int bullishCandles = 0;
+    int bearishCandles = 0;
+    
+    // Perform candle analysis for the specified period
+    for(int i = 0; i < period; i++)
+    {
+        if(iClose(NULL, 0, i) > iOpen(NULL, 0, i))
+            bullishCandles++;
+        else
+            bearishCandles++;
+    }
+    
+    // Return the difference between bullish and bearish candles
+    return bullishCandles - bearishCandles;
+}
+
+// Function to generate trading signals
+bool generateSignals(int period)
+{
+    // Analyze candles for the specified period
+    int candleAnalysis = analyzeCandles(period);
+    
+    // Generate trading signal based on candle analysis
+    if(candleAnalysis > 0)
+    {
+        // Bullish signal, open buy trade
+        if(!OrderSend(Symbol(), OP_BUY, lot_volume, Ask, 0, Bid - take_profit * Point, Bid + loss_limit * Point, trade_comment, expert_magic_number, 0, Green))
+            return false;
+    }
+    else if(candleAnalysis < 0)
+    {
+        // Bearish signal, open sell trade
+        if(!OrderSend(Symbol(), OP_SELL, lot_volume, Bid, 0, Ask + take_profit * Point, Ask - loss_limit * Point, trade_comment, expert_magic_number, 0, Red))
+            return false;
+    }
+    
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| Expert advisor start function                                    |
+//+------------------------------------------------------------------+
+int start()
+{
+    // Generate trading signals using the specified signal period
+    if(!generateSignals(signal_period))
+    {
+        Print('Error: Unable to generate trading signals');
+        return -1;
+    }
+    
+    return 0;
+}
